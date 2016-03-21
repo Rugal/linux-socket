@@ -8,6 +8,7 @@
 #ifndef INTERNETSOCKET_H
 #define INTERNETSOCKET_H
 #include <netinet/in.h>
+#include "Configuration.h"
 #ifdef __cplusplus
 extern "C"
 {
@@ -25,7 +26,7 @@ extern "C"
      * @param port
      * @return
      */
-    struct sockaddr_in* bindTCPAddress(int sd, unsigned int port);
+    struct sockaddr_in* bindTCPAddress(Configuration* conf);
 
 
 #ifdef __cplusplus

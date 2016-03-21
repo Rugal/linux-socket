@@ -15,7 +15,7 @@
 #include <netinet/in.h>
 #include <sys/wait.h>
 #include "TCPSocket.h"
-#define PORT 23333
+#include "Configuration.h"
 #define CLIENT_INPUT_BUFFER_SIZE 1024
 
 void handler(int s)
@@ -24,7 +24,6 @@ void handler(int s)
     wait(&status);
     printf("One child terminated\n");
 }
-
 
 void childProcess(int socket, struct sockaddr_in * client)
 {
@@ -37,12 +36,8 @@ void childProcess(int socket, struct sockaddr_in * client)
     close(socket);
 }
 
-/*
- *
- */
-int main(int argc, char** argv)
+void registerSignal()
 {
-    printf("Server launched\n");
     struct sigaction act;
     memset(&act, 0, sizeof (act));
     act.sa_handler = &handler;
@@ -52,34 +47,58 @@ int main(int argc, char** argv)
         perror("Unable to handle Signal Child!\n");
         exit(1);
     }
+}
 
-    int sd = createTCPSocket();
-    struct sockaddr_in *serverAddress = bindTCPAddress(sd, PORT);
-    //specify the quene length
-    listen(sd, 5);
+void start(int socket)
+{
     struct sockaddr_in clientAddress;
     socklen_t clientLength = sizeof (clientAddress);
     int client = 0;
-    printf("Server listening\n");
-    while ((client = accept(sd, (struct sockaddr *)&clientAddress, &clientLength)) >= 0)
+    while ((client = accept(socket, (struct sockaddr *)&clientAddress, &clientLength)) >= 0)
     {
-        printf("Get connection from %s\n", inet_ntoa(clientAddress.sin_addr));
-        if(client < 0)
-        {
-            fprintf(2, "Unable to create child socket\n");
-            exit(2);
-        }
+        printf("Get connection from %s:%d\n",inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port));
         if(0 == fork()) // child
         {
-            close(sd);
-            printf("Child forked for %s:%d\n",inet_ntoa(clientAddress.sin_addr), clientAddress.sin_port);
+            close(socket);
+            printf("Child forked for %s:%d\n",inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port));
             childProcess(client, &clientAddress);
-            printf("Child terminating\n");
+            printf("Child terminating for %s:%d\n",inet_ntoa(clientAddress.sin_addr),ntohs(clientAddress.sin_port));
             exit(0);
         }
         close(client);
     }
+}
+
+/*
+ *
+ */
+int main(int argc, char** argv)
+{
+    //paremeter setting
+    Configuration* conf = createConfiguration();
+    if(argc > 1)
+    {
+        conf->port = atoi(argv[1]);
+    }
+
+    //Signal register
+    registerSignal();
+
+    //socket setup
+    printf("Server launched\n");
+    conf->socket = createTCPSocket();
+    struct sockaddr_in *serverAddress = bindTCPAddress(conf);
+    printf("Bind socket to %s:%d\n",inet_ntoa(serverAddress->sin_addr), ntohs(serverAddress->sin_port));
+        //specify the quene length
+    listen(conf->socket, conf->queue);
+
+    //start listening
+    printf("Server listening\n");
+    start(conf->socket);
+
+    //Cleanup
+    close(conf->socket);
+    deleteConfiguration(conf);
     free(serverAddress);
-    close(sd);
     return (EXIT_SUCCESS);
 }

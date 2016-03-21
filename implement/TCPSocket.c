@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include "TCPSocket.h"
+#include "Configuration.h"
 
 int createTCPSocket()
 {
@@ -17,19 +18,20 @@ int createTCPSocket()
     return sd;
 }
 
-struct sockaddr_in* bindTCPAddress(int sd, unsigned int port)
+struct sockaddr_in* bindTCPAddress(Configuration* conf)
 {
-    //Trying to bind socket with specific address and port
+    //Create sockAddress object
     struct sockaddr_in* serverAddress = malloc(sizeof (struct sockaddr_in));
     {
         memset(serverAddress, 0, sizeof (struct sockaddr_in));
         serverAddress->sin_family = AF_INET;
-        serverAddress->sin_addr.s_addr = htonl(INADDR_ANY);
-        serverAddress->sin_port = htons(port);
+        serverAddress->sin_addr.s_addr = htonl(conf->address);
+        serverAddress->sin_port = htons(conf->port);
     }
-    if (bind(sd, (struct sockaddr *) serverAddress, sizeof (struct sockaddr_in)) < 0)
+    //Trying to bind socket with specific address and port
+    if (bind(conf->socket, (struct sockaddr *) serverAddress, sizeof (struct sockaddr_in)) < 0)
     {
-        fprintf(stderr, "Unable to bind socket on 0.0.0.0:%u \n", port);
+        fprintf(stderr, "Unable to bind socket to %s:%d\n",inet_ntoa(serverAddress->sin_addr), serverAddress->sin_port);
         exit(1);
     }
     return serverAddress;
