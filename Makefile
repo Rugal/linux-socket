@@ -1,4 +1,4 @@
-CC=gcc -g3 -w -o $@
+CC=gcc -std=c11 -g3 -w -o $@
 COMPILE=-c $<
 VPATH=include
 SERVER=server

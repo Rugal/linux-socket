@@ -11,7 +11,7 @@ int createTCPSocket()
     int sd = socket(AF_INET, SOCK_STREAM, 0);
     if (sd < 0)
     {
-        //        perror("Unable to create socket\n");
+        perror("Unable to create socket\n");
         exit(1);
     }
     return sd;
@@ -29,7 +29,7 @@ struct sockaddr_in* bindTCPAddress(int sd, unsigned int port)
     }
     if (bind(sd, (struct sockaddr *) serverAddress, sizeof (struct sockaddr_in)) < 0)
     {
-        //        fprintf(stderr, "Unable to bind socket on 0.0.0.0:%u \n", port);
+        fprintf(stderr, "Unable to bind socket on 0.0.0.0:%u \n", port);
         exit(1);
     }
     return serverAddress;
