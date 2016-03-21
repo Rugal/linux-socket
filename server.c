@@ -18,11 +18,13 @@
  */
 int main(int argc, char** argv)
 {
+    printf("Server launched\n");
     int sd = createTCPSocket();
     struct sockaddr_in *serverAddress = bindTCPAddress(sd, PORT), clientAddress;
     //specify the quene length
     listen(sd, 3);
     socklen_t clientLength = sizeof (clientAddress);
+    printf("Server listening\n");
     int client = accept(sd, (struct sockaddr *) &clientAddress, &clientLength);
     printf("Get connection from %u\n", clientAddress.sin_addr.s_addr);
     if(client < 0)

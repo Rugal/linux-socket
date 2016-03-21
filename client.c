@@ -21,5 +21,8 @@ int main(int argc, char** argv)
         fprintf(stderr, "Unable to connect to server\n" );
         exit(2);
     }
+    char input[1024];
+    while(scanf("%s", input) && strcmp(input, "exit")!=0)
+        write(sd, input, 1024);
     return (EXIT_SUCCESS);
 }

@@ -4,9 +4,8 @@ VPATH=include
 SERVER=server
 CLIENT=client
 
-
+#Build all
 all: ${SERVER} ${CLIENT}
-
 
 #Build server
 ${SERVER}: server.o TCPSocket.o
