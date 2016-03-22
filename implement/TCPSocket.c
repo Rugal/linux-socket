@@ -31,7 +31,7 @@ struct sockaddr_in* bindTCPAddress(Configuration* conf)
     //Trying to bind socket with specific address and port
     if (bind(conf->socket, (struct sockaddr *) serverAddress, sizeof (struct sockaddr_in)) < 0)
     {
-        fprintf(stderr, "Unable to bind socket to %s:%d\n",inet_ntoa(serverAddress->sin_addr), serverAddress->sin_port);
+        fprintf(stderr, "Unable to bind socket to %s:%d\n",inet_ntoa(serverAddress->sin_addr), htons(serverAddress->sin_port));
         exit(1);
     }
     return serverAddress;

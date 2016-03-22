@@ -7,6 +7,7 @@
 #define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
@@ -16,7 +17,8 @@
 #include <sys/wait.h>
 #include "TCPSocket.h"
 #include "Configuration.h"
-#define CLIENT_INPUT_BUFFER_SIZE 1024
+#include "ArrayList.h"
+#define BUFFER_SIZE 1024
 
 void handler(int s)
 {
@@ -25,14 +27,67 @@ void handler(int s)
     printf("One child terminated\n");
 }
 
+void execute(int socket, char** command)
+{
+    //going to use pipe
+    char buffer;
+    int status=0, p[2];
+    pipe(p);
+    if(fork()==0)
+    {
+        //piping stdout to pipe-write
+        close(1);
+        dup2(p[1], 1);
+        close(p[0]);
+        close(p[1]);
+        execvp(command[0], command);
+    }
+    else
+    {
+        //read from pipe
+        wait(&status);
+        close(p[1]);
+        while (read(p[0], &buffer, 1) > 0)
+            write(socket, &buffer, 1);
+        close(p[0]);
+    }
+}
+
+ArrayList* readCommand(int socket, ArrayList* list)
+{
+    //Buffering all input command
+    char buffer[BUFFER_SIZE];
+    FILE *stream = fmemopen(buffer, BUFFER_SIZE, "rw");
+    while (read(socket, &buffer[0], 1) > 0 && buffer[0] != '\n')
+        fprintf(stream, "%c", buffer[0]);
+    //extract each word into word array
+    printf("Rugal");
+    fseek(stream, 0, SEEK_SET);
+    while(fscanf(stream, "%s", buffer)>0)
+        addWord(list, buffer);
+    close(stream);
+    //See if time to exit
+    return list;
+}
+
 void childProcess(int socket, struct sockaddr_in * client)
 {
-    char input[CLIENT_INPUT_BUFFER_SIZE];
-    while(read(socket, input,CLIENT_INPUT_BUFFER_SIZE)>0 && strcmp(input, "exit")!=0)
-        printf("Receive data from %s:%d\n    >%s<\n",
+    while(1)
+    {
+        printf("Receive data from %s:%d\n",
                 inet_ntoa(client->sin_addr),
-                client->sin_port,
-                input);
+                htons(client->sin_port));
+        //buffering all command input
+        ArrayList* list = createArrayList();
+        readCommand(socket, list);
+        printf("%s\n", list->array[0]);
+        //See if time to exit
+        if(strcmp(list->array[0], "exit") == 0)
+            break;
+        //execute command and listen from pipe
+        execute(socket, list->array);
+        deleteArrayList(list);
+    }
     close(socket);
 }
 

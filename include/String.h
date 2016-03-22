@@ -59,6 +59,15 @@ extern "C"
      * @return The number of character that appended.
      */
     int appendString(String* s, char* ca, int size);
+    /**
+     * Split an String object by space into an 2D array where each word are fit 
+     * in its corresponding position.
+     * @param str
+     * @param length The total length of splitted 2D
+     * @return The 2D array than contains all words
+     *
+     */
+    //char** stringSplit2Array(String* str, int* length);
 #ifdef __cplusplus
 }
 #endif

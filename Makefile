@@ -8,13 +8,17 @@ CLIENT=client
 all: ${SERVER} ${CLIENT}
 
 #Build server
-${SERVER}: server.o TCPSocket.o Configuration.o
+${SERVER}: server.o TCPSocket.o Configuration.o ArrayList.o
 	${CC} $^
 server.o: server.c
 	${CC} -I ${VPATH} ${COMPILE}
 TCPSocket.o: implement/TCPSocket.c
 	${CC} -I ${VPATH} ${COMPILE}
 Configuration.o: implement/Configuration.c
+	${CC} -I ${VPATH} ${COMPILE}
+String.o: implement/String.c
+	${CC} -I ${VPATH} ${COMPILE}
+ArrayList.o: implement/ArrayList.c
 	${CC} -I ${VPATH} ${COMPILE}
 
 #Build client

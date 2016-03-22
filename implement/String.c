@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include <unistd.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "String.h"
@@ -16,9 +17,7 @@ struct String
 int size(String* s)
 {
     if (NULL == s)
-    {
         return -1;
-    }
     return s->size;
 }
 
@@ -95,4 +94,3 @@ int appendString(String* s, char* ca, int size)
         appendChar(s, ca[i]);
     return size;
 }
-

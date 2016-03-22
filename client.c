@@ -32,7 +32,12 @@ int main(int argc, char** argv)
     printf("Server connected %s:%d\n",inet_ntoa(serverAddress.sin_addr), ntohs(serverAddress.sin_port));
     char input[1024];
     while(scanf("%s", input) && strcmp(input, "exit")!=0)
+    {
         write(server, input, strlen(input)+1);
+        char buffer;
+        while(read(server, buffer, 1)>0)
+            printf("%c", buffer);
+    }
     close(server);
     deleteConfiguration(conf);
     exit(0);
