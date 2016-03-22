@@ -17,55 +17,70 @@
 #include <sys/wait.h>
 #include "TCPSocket.h"
 #include "Configuration.h"
+#include "String.h"
 #include "ArrayList.h"
 #define BUFFER_SIZE 1024
 
 void handler(int s)
 {
     int status;
+    /*waitpid(0, &status, WNOHANG);*/
     wait(&status);
     printf("One child terminated\n");
 }
 
-void execute(int socket, char** command)
+void execute(int socket, ArrayList* list)
 {
     //going to use pipe
     char buffer;
     int status=0, p[2];
-    pipe(p);
-    if(fork()==0)
+    if(pipe(p)<0)
+        fprintf(stderr, "Unable to create pipe\n");
+    if(fork()==0) // child
     {
+        printf("A child process has been dispatched to execute:\n");
+        for(int i=0; i < list->size ; i++)
+            printf("%s ", list->array[i]);
+        printf("\n");
         //piping stdout to pipe-write
-        close(1);
         dup2(p[1], 1);
         close(p[0]);
         close(p[1]);
-        execvp(command[0], command);
+        execvp(list->array[0], list->array);
     }
     else
     {
-        //read from pipe
         wait(&status);
-        close(p[1]);
+        //read from pipe
+        //send to through socket
         while (read(p[0], &buffer, 1) > 0)
             write(socket, &buffer, 1);
-        close(p[0]);
     }
+    close(p[1]);
+    close(p[0]);
 }
 
 ArrayList* readCommand(int socket, ArrayList* list)
 {
     //Buffering all input command
-    char buffer[BUFFER_SIZE];
-    FILE *stream = fmemopen(buffer, BUFFER_SIZE, "rw");
-    while (read(socket, &buffer[0], 1) > 0 && buffer[0] != '\n')
-        fprintf(stream, "%c", buffer[0]);
+    String* s = createString(10);
+    char input;
+    while(read(socket, &input, 1) > 0 && input != '\n')
+    {
+        printf("%c", input);
+        appendChar(s, input);
+    }
+    /*printf("\n%s\n", data(s));*/
     //extract each word into word array
-    printf("Rugal");
-    fseek(stream, 0, SEEK_SET);
-    while(fscanf(stream, "%s", buffer)>0)
-        addWord(list, buffer);
+    FILE *stream = fmemopen(data(s), size(s), "r");
+    while(!feof(stream))
+    {
+        char token[BUFFER_SIZE];
+        fscanf(stream, "%s", token);
+        addWord(list, token);
+    }
     close(stream);
+    deleteString(s);
     //See if time to exit
     return list;
 }
@@ -74,18 +89,23 @@ void childProcess(int socket, struct sockaddr_in * client)
 {
     while(1)
     {
-        printf("Receive data from %s:%d\n",
+        printf("Waiting for data from %s:%d\n",
                 inet_ntoa(client->sin_addr),
                 htons(client->sin_port));
         //buffering all command input
         ArrayList* list = createArrayList();
         readCommand(socket, list);
-        printf("%s\n", list->array[0]);
+        printf("Receiving data from %s:%d\n",
+                inet_ntoa(client->sin_addr),
+                htons(client->sin_port));
         //See if time to exit
         if(strcmp(list->array[0], "exit") == 0)
             break;
+        printf("Going to execute command for %s:%d\n",
+                inet_ntoa(client->sin_addr),
+                htons(client->sin_port));
         //execute command and listen from pipe
-        execute(socket, list->array);
+        execute(socket, list);
         deleteArrayList(list);
     }
     close(socket);

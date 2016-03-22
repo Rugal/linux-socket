@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "String.h"
 
 #define DEFAULT_LENGTH 20
@@ -16,17 +17,15 @@ struct String
 
 int size(String* s)
 {
-    if (NULL == s)
-        return -1;
+    assert(NULL != s);
+    /*if (NULL == s)*/
+        /*return -1;*/
     return s->size;
 }
 
 char* data(String* s)
 {
-    if (NULL == s)
-    {
-        return NULL;
-    }
+    assert(NULL != s);
     return s->data;
 }
 
@@ -88,8 +87,7 @@ int appendChar(String* s, char c)
 
 int appendString(String* s, char* ca, int size)
 {
-    if (NULL == s)
-        return 0;
+    assert(s != NULL);
     for (int i = 0; i < size; i++)
         appendChar(s, ca[i]);
     return size;
