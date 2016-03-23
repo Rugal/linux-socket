@@ -47,6 +47,7 @@ void execute(int socket, ArrayList* list)
         close(p[0]);
         close(p[1]);
         execvp(list->array[0], list->array);
+        exit(0);
     }
     else
     {
@@ -55,9 +56,9 @@ void execute(int socket, ArrayList* list)
         //send to through socket
         while (read(p[0], &buffer, 1) > 0)
             write(socket, &buffer, 1);
+        close(p[1]);
+        close(p[0]);
     }
-    close(p[1]);
-    close(p[0]);
 }
 
 ArrayList* readCommand(int socket, ArrayList* list)
@@ -67,10 +68,10 @@ ArrayList* readCommand(int socket, ArrayList* list)
     char input;
     while(read(socket, &input, 1) > 0 && input != '\n')
     {
-        printf("%c", input);
+        /*printf("%c", input);*/
         appendChar(s, input);
     }
-    /*printf("\n%s\n", data(s));*/
+    printf("\n%s\n", data(s));
     //extract each word into word array
     FILE *stream = fmemopen(data(s), size(s), "r");
     while(!feof(stream))
@@ -140,6 +141,8 @@ void start(int socket)
             printf("Child terminating for %s:%d\n",inet_ntoa(clientAddress.sin_addr),ntohs(clientAddress.sin_port));
             exit(0);
         }
+        //Signal register
+        registerSignal();
         close(client);
     }
 }
@@ -156,8 +159,6 @@ int main(int argc, char** argv)
         conf->port = atoi(argv[1]);
     }
 
-    //Signal register
-    registerSignal();
 
     //socket setup
     printf("Server launched\n");
