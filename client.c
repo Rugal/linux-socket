@@ -25,7 +25,10 @@ void startClient(int server)
             continue;
         }
         if(strncmp("exit", data(s), 4) == 0)
+        {
+            write(server, "exit", 5);
             break;
+        }
         //put last newline character
         appendChar(s, '\0');
         //send data to server

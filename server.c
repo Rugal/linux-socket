@@ -101,9 +101,9 @@ void childProcess(int socket, struct sockaddr_in * client)
     for(int count = 0; 1; count++)
     {
         signal(SIGPIPE, handler);
-        printf("Waiting for data from %s:%d\n",
-                inet_ntoa(client->sin_addr),
-                htons(client->sin_port));
+        //printf("Waiting for data from %s:%d\n",
+                //inet_ntoa(client->sin_addr),
+                //htons(client->sin_port));
         //buffering all command input
         ArrayList* list = createArrayList();
         if(NULL == readCommand(socket, list))
@@ -113,6 +113,8 @@ void childProcess(int socket, struct sockaddr_in * client)
                 break;
             continue;
         }
+        if(strncmp("exit", list->array[0], 4) == 0)
+            break;
         printf("Receiving data from %s:%d\n",
                 inet_ntoa(client->sin_addr),
                 htons(client->sin_port));
