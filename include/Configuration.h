@@ -12,6 +12,7 @@ extern "C"
         unsigned int address;
         unsigned int port;
         unsigned int queue;
+        char* ip;
     } Configuration;
 
     Configuration* createConfiguration();

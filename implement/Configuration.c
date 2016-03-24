@@ -11,6 +11,7 @@ Configuration* createConfiguration()
     conf->port=PORT;
     conf->queue=5;
     conf->socket=-1;
+    conf->ip=NULL;
     return conf;
 }
 void deleteConfiguration(Configuration* conf)

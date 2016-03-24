@@ -23,10 +23,12 @@
 
 void handler(int s)
 {
+    if( s == SIGPIPE )
+        exit(0);
     int status;
     /*waitpid(0, &status, WNOHANG);*/
     wait(&status);
-    printf("One child terminated\n");
+    printf("One child terminated %d\n", s);
 }
 
 void execute(int socket, ArrayList* list)
@@ -48,16 +50,19 @@ void execute(int socket, ArrayList* list)
         close(p[1]);
         execvp(list->array[0], list->array);
         exit(0);
+        printf("Should not be here\n");
     }
     else
     {
         wait(&status);
         //read from pipe
         //send to through socket
+        close(p[1]);
         while (read(p[0], &buffer, 1) > 0)
             write(socket, &buffer, 1);
-        close(p[1]);
         close(p[0]);
+        buffer='\0';
+        write(socket, &buffer, 1);
     }
 }
 
@@ -66,12 +71,17 @@ ArrayList* readCommand(int socket, ArrayList* list)
     //Buffering all input command
     String* s = createString(10);
     char input;
-    while(read(socket, &input, 1) > 0 && input != '\n')
+    while(read(socket, &input, 1) > 0 &&  '\0' != input)
     {
-        /*printf("%c", input);*/
+        printf("%c", input);
         appendChar(s, input);
     }
-    printf("\n%s\n", data(s));
+    /*printf("\n%d\n", size(s));*/
+    if(0 == size(s))
+    {
+        deleteString(s);
+        return NULL;
+    }
     //extract each word into word array
     FILE *stream = fmemopen(data(s), size(s), "r");
     while(!feof(stream))
@@ -80,7 +90,7 @@ ArrayList* readCommand(int socket, ArrayList* list)
         fscanf(stream, "%s", token);
         addWord(list, token);
     }
-    close(stream);
+    fclose(stream);
     deleteString(s);
     //See if time to exit
     return list;
@@ -88,26 +98,34 @@ ArrayList* readCommand(int socket, ArrayList* list)
 
 void childProcess(int socket, struct sockaddr_in * client)
 {
-    while(1)
+    for(int count = 0; 1; count++)
     {
+        signal(SIGPIPE, handler);
         printf("Waiting for data from %s:%d\n",
                 inet_ntoa(client->sin_addr),
                 htons(client->sin_port));
         //buffering all command input
         ArrayList* list = createArrayList();
-        readCommand(socket, list);
+        if(NULL == readCommand(socket, list))
+        {
+            deleteArrayList(list);
+            if(count == 5)
+                break;
+            continue;
+        }
         printf("Receiving data from %s:%d\n",
                 inet_ntoa(client->sin_addr),
                 htons(client->sin_port));
         //See if time to exit
-        if(strcmp(list->array[0], "exit") == 0)
-            break;
+        /*if(strcmp(list->array[0], "exit") == 0)*/
+            /*break;*/
         printf("Going to execute command for %s:%d\n",
                 inet_ntoa(client->sin_addr),
                 htons(client->sin_port));
         //execute command and listen from pipe
         execute(socket, list);
         deleteArrayList(list);
+        count=0;
     }
     close(socket);
 }
@@ -132,6 +150,7 @@ void start(int socket)
     int client = 0;
     while ((client = accept(socket, (struct sockaddr *)&clientAddress, &clientLength)) >= 0)
     {
+        registerSignal();
         printf("Get connection from %s:%d\n",inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port));
         if(0 == fork()) // child
         {
@@ -142,7 +161,6 @@ void start(int socket)
             exit(0);
         }
         //Signal register
-        registerSignal();
         close(client);
     }
 }
