@@ -46,6 +46,7 @@ void execute(int socket, ArrayList* list)
         printf("\n");
         //piping stdout to pipe-write
         dup2(p[1], 1);
+        dup2(p[1], 2);
         close(p[0]);
         close(p[1]);
         execvp(list->array[0], list->array);
